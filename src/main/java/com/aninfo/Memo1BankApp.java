@@ -1,6 +1,9 @@
 package com.aninfo;
 
 import com.aninfo.model.Account;
+import com.aninfo.model.Transaction;
+import com.aninfo.model.Deposit;
+import com.aninfo.model.Withdraw;
 import com.aninfo.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -12,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
@@ -83,4 +88,41 @@ public class Memo1BankApp {
 			.paths(PathSelectors.any())
 			.build();
 	}
+
+	@GetMapping("/accounts/{cbu}/transactions")
+	public ResponseEntity<List<String>> getAccountTransactions(@PathVariable Long cbu) {
+		Optional<Account> accountOptional = accountService.findById(cbu);
+
+		if (accountOptional.isPresent()) {
+			List<String> transactionDetails = new ArrayList<>();
+
+			Account account = accountOptional.get();
+			List<Transaction> transactions = account.getTransactions();
+
+			for (Transaction transaction : transactions) {
+				String transactionType = "";
+				if (transaction instanceof Deposit) {
+					transactionType = "Deposit";
+				} else if (transaction instanceof Withdraw) {
+					transactionType = "Withdraw";
+				}
+
+				transactionDetails.add(transactionType + " - ID: " + transaction.getTransactionId() + ", Amount: " + transaction.getAmount());
+			}
+
+			return ResponseEntity.ok(transactionDetails);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@DeleteMapping("/{accountId}/transactions/{transactionId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteTransaction(
+			@PathVariable Long accountId,
+			@PathVariable Long transactionId
+	) {
+		accountService.deleteTransaction(accountId, transactionId);
+	}
+
 }
